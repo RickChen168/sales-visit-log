@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>業務出訪記錄</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: field notebook — one column form, a tracker ledger with summary strip, filters, expandable rows */
+:root{
+  --bg:#f5f7f6; --surface:#ffffff; --ink:#17201f; --muted:#5d6b69; --line:#d9e0de;
+  --accent:#0d5e5a; --accent-ink:#ffffff; --accent-soft:#e1efed;
+  --warn:#9a5b00; --warn-soft:#fbefd9; --bad:#a3332b; --bad-soft:#f8e2df; --ok:#2f6b2f; --ok-soft:#e3f0e0;
+  --f-display:"Noto Serif TC","Songti TC",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111716; --surface:#19211f; --ink:#e6ecea; --muted:#9aa9a6; --line:#2c3735;
+  --accent:#5fc0b8; --accent-ink:#0b1514; --accent-soft:#1d3532;
+  --warn:#e6b25c; --warn-soft:#3a2d16; --bad:#ec8c83; --bad-soft:#3c1f1c; --ok:#8fcf87; --ok-soft:#1e3320; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111716; --surface:#19211f; --ink:#e6ecea; --muted:#9aa9a6; --line:#2c3735;
+  --accent:#5fc0b8; --accent-ink:#0b1514; --accent-soft:#1d3532;
+  --warn:#e6b25c; --warn-soft:#3a2d16; --bad:#ec8c83; --bad-soft:#3c1f1c; --ok:#8fcf87; --ok-soft:#1e3320; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;padding:0 16px;padding-block:24px 64px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--f-display);font-size:28px;margin:0;line-height:1.2;text-wrap:balance}
+.sub{color:var(--muted);font-size:13px;margin:4px 0 0}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px}
+.tabs button{border:0;background:none;color:var(--muted);font:inherit;font-weight:500;padding:8px 16px;border-radius:7px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs .count{font-family:var(--f-mono);font-size:12px;margin-left:6px;opacity:.8}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.notice{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;font-size:14px;color:var(--muted)}
+.notice.err{border-color:var(--bad);color:var(--bad);background:var(--bad-soft)}
+
+/* form */
+form{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:24px}
+fieldset{border:0;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 18px}
+legend{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--accent);padding:0 0 10px;text-transform:uppercase}
+.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f.wide{grid-column:1/-1}
+label{font-size:13px;font-weight:500}
+label .req{color:var(--bad);margin-left:2px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%;min-width:0}
+textarea{min-height:84px;resize:vertical}
+.hint{font-size:12px;color:var(--muted)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg label{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;font-weight:400;background:var(--bg)}
+.seg input{width:auto;margin:0;accent-color:var(--accent)}
+.seg label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.btn{font:inherit;font-weight:500;border-radius:8px;padding:10px 20px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:5px 12px;font-size:13px}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.toast{font-size:14px;color:var(--ok)}
+.toast.err{color:var(--bad)}
+
+/* tracker */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font-family:var(--f-mono);font-size:24px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.3}
+.stat.alert .v{color:var(--bad)}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.filters .f{flex:1 1 140px}
+.filters .f.q{flex:2 1 220px}
+.tablebox{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:860px}
+th{text-align:left;font-size:12px;font-weight:500;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface)}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--accent-soft)}
+tr.row.open td{background:var(--accent-soft)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}
+.co{font-weight:700}
+.co small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;background:var(--bg);border:1px solid var(--line);white-space:nowrap}
+.pill.s1{background:var(--accent-soft);border-color:transparent}
+.pill.s2{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.pill.won{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.pill.lost{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.due{color:var(--bad);font-weight:500}
+.soon{color:var(--warn)}
+td select{padding:4px 8px;font-size:13px;width:auto;background:var(--surface)}
+tr.detail td{background:var(--bg);padding:16px 18px}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px 24px}
+.dgrid div{min-width:0}
+.dgrid h4{margin:0 0 2px;font-size:12px;color:var(--muted);font-weight:500}
+.dgrid p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.drow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px;font-size:12px;color:var(--muted)}
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+.bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>業務出訪記錄</h1>
+      <p class="sub" id="today"></p>
+    </div>
+  </header>
+
+  <div class="notice" id="status" hidden></div>
+
+  <!-- FORM -->
+  <section id="pane-form">
+    <form id="visitForm" novalidate>
+      <fieldset>
+        <legend>基本資訊</legend>
+        <div class="f"><label for="rep">業務姓名<span class="req">*</span></label><input id="rep" required autocomplete="name" placeholder="例：陳小明"><span class="hint">會記在這台裝置，下次自動帶入</span></div>
+        <div class="f"><label>身份別<span class="req">*</span></label>
+          <div class="seg" id="roleSeg">
+            <label><input type="radio" name="role" id="role-1" value="睿思智慧" checked>睿思智慧</label>
+            <label><input type="radio" name="role" id="role-2" value="經銷商">經銷商</label>
+          </div>
+        </div>
+        <div class="f"><label for="visitDate">出訪日期<span class="req">*</span></label><input id="visitDate" type="date" required></div>
+        <div class="f"><label>會議形式</label>
+          <div class="seg" id="modeSeg">
+            <label><input type="radio" name="mode" id="mode-1" value="實體拜訪" checked>實體拜訪</label>
+            <label><input type="radio" name="mode" id="mode-2" value="線上會議">線上會議</label>
+            <label><input type="radio" name="mode" id="mode-3" value="電話">電話</label>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>客戶</legend>
+        <div class="f"><label for="company">客戶公司<span class="req">*</span></label><input id="company" required placeholder="公司全名或常用簡稱"></div>
+        <div class="f"><label for="contact">拜訪對象</label><input id="contact" placeholder="姓名"></div>
+        <div class="f"><label for="title">職稱 / 部門</label><input id="title" placeholder="例：IT 處長"></div>
+        <div class="f"><label for="industry">產業別</label>
+          <select id="industry"><option value="">—</option><option>製造業</option><option>金融保險</option><option>零售 / 電商</option><option>科技 / 半導體</option><option>醫療 / 生技</option><option>政府 / 公部門</option><option>服務業</option><option>其他</option></select></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>會議內容</legend>
+        <div class="f wide"><label for="summary">會議重點<span class="req">*</span></label><textarea id="summary" required placeholder="討論了什麼、客戶的反應、提到的競品…"></textarea></div>
+        <div class="f wide"><label for="needs">客戶需求 / 痛點</label><textarea id="needs" placeholder="例：客服人力不足，希望導入 AI Agent 處理 Tier-1 問題"></textarea></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>商機與跟進</legend>
+        <div class="f"><label for="stage">商機階段<span class="req">*</span></label>
+          <select id="stage" required>
+            <option value="">請選擇</option><option>初次接觸</option><option>需求確認</option><option>提案 / 報價</option><option>POC 中</option><option>議價 / 簽約</option><option>成交</option><option>暫停 / 流失</option>
+          </select></div>
+        <div class="f"><label for="amount">預估金額（新台幣）</label><input id="amount" type="number" min="0" step="10000" inputmode="numeric" placeholder="例：1200000"></div>
+        <div class="f"><label for="nextDate">下次跟進日期</label><input id="nextDate" type="date"></div>
+        <div class="f wide"><label for="nextAction">下一步行動</label><input id="nextAction" placeholder="例：週五前寄送報價單與案例簡報"></div>
+      </fieldset>
+
+<div class="f" style="position:absolute;left:-9999px" aria-hidden="true"><label for="website">網站</label><input id="website" tabindex="-1" autocomplete="off"></div>
+      <div class="actions">
+        <button class="btn primary" type="submit" id="submitBtn" disabled>送出記錄</button>
+        <button class="btn" type="button" id="resetBtn">清空</button>
+        <span class="toast" id="toast" role="status"></span>
+      </div>
+    </form>
+  </section>
+</div>
+
+<script>
+/* ===== 設定：貼上 Apps Script 部署後的「網頁應用程式網址」 ===== */
+const SCRIPT_URL = "";
+/* ============================================================= */
+(function(){
+  const $ = id => document.getElementById(id);
+  const tz = "Asia/Taipei";
+  const ymd = d => new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
+  const todayStr = () => ymd(new Date());
+  const wk="日一二三四五六";
+  $("today").textContent = "今天 " + todayStr().replace(/-/g,"/") + "（" + wk[new Date(todayStr()+"T00:00:00").getDay()] + "）· 送出後自動寫入追蹤清單";
+
+  function lsGet(k){ try{return localStorage.getItem(k)||""}catch(e){return ""} }
+  function lsSet(k,v){ try{localStorage.setItem(k,v)}catch(e){} }
+  $("rep").value = lsGet("visit.rep");
+  if(lsGet("visit.role")==="經銷商") $("role-2").checked=true;
+  $("visitDate").value = todayStr();
+
+  const st=$("status");
+  if(!SCRIPT_URL){ st.hidden=false; st.className="notice err"; st.textContent="表單尚未設定資料接收網址（SCRIPT_URL），目前無法送出。"; }
+  else $("submitBtn").disabled=false;
+
+  const val = id => $(id).value.trim();
+  const radio = n => (document.querySelector('input[name="'+n+'"]:checked')||{}).value||"";
+  function clearForm(){ ["company","contact","title","summary","needs","amount","nextDate","nextAction"].forEach(i=>$(i).value=""); $("stage").value=""; $("industry").value=""; $("mode-1").checked=true; }
+  $("resetBtn").onclick=()=>{ clearForm(); $("toast").textContent=""; };
+
+  $("visitForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const t=$("toast"); t.className="toast";
+    const missing=[["rep","業務姓名"],["visitDate","出訪日期"],["company","客戶公司"],["summary","會議重點"],["stage","商機階段"]].filter(([i])=>!val(i)).map(([,n])=>n);
+    if(missing.length){ t.className="toast err"; t.textContent="請填寫："+missing.join("、"); return; }
+    const stage=val("stage");
+    const doc = {
+      visitDate: val("visitDate"), role: radio("role"), rep: val("rep"), mode: radio("mode"),
+      company: val("company"), contact: val("contact"), title: val("title"), industry: val("industry"),
+      summary: val("summary"), needs: val("needs"), stage: stage, amount: val("amount"),
+      nextAction: val("nextAction"), nextDate: val("nextDate"),
+      status: (stage==="成交"||stage==="暫停 / 流失") ? "已完成" : "待跟進",
+      website: val("website")
+    };
+    const btn=$("submitBtn"); btn.disabled=true; t.textContent="送出中…";
+    try{
+      await fetch(SCRIPT_URL, { method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(doc) });
+      lsSet("visit.rep", doc.rep); lsSet("visit.role", doc.role);
+      clearForm();
+      t.textContent = "已送出：" + doc.company + "，已寫入追蹤清單。";
+    }catch(err){
+      t.className="toast err";
+      t.textContent = "送出失敗，請確認網路連線後再試一次。內容仍保留在表單中。";
+    }finally{ btn.disabled=false; }
+  });
+})();
+</script>
+</body>
+</html>
