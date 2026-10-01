@@ -215,13 +215,15 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwui-sPIaCLMd-iuf06c
     };
     const btn=$("submitBtn"); btn.disabled=true; t.textContent="送出中…";
     try{
-      await fetch(SCRIPT_URL, { method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(doc) });
+      const res = await fetch(SCRIPT_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(doc) });
+      const out = await res.json().catch(()=>null);
+      if(!out || !out.ok) throw new Error(out && out.error || "bad response");
       lsSet("visit.rep", doc.rep); lsSet("visit.role", doc.role);
       clearForm();
       t.textContent = "已送出：" + doc.company + "，已寫入追蹤清單。";
     }catch(err){
       t.className="toast err";
-      t.textContent = "送出失敗，請確認網路連線後再試一次。內容仍保留在表單中。";
+      t.textContent = "送出失敗，資料沒有寫入。請確認網路連線後再試一次；若持續失敗請通知管理者。內容仍保留在表單中。";
     }finally{ btn.disabled=false; }
   });
 })();
