@@ -1,4 +1,4 @@
-# 業務出訪記錄
+# 業務追蹤記錄
 
 業務填寫當天出訪會議記錄的表單頁面，部署在 GitHub Pages。送出的資料會寫進一份 Google 試算表，追蹤清單就在試算表裡看。
 
@@ -8,7 +8,7 @@ GitHub Pages 表單 (index.html) ──POST──▶ Google Apps Script (apps-sc
 
 ## 設定步驟
 
-1. 打開 Google 試算表「業務出訪記錄 追蹤清單」→ 擴充功能 → Apps Script。
+1. 打開 Google 試算表「業務追蹤清單」→ 擴充功能 → Apps Script。
 2. 把 `apps-script/Code.gs` 的內容整段貼上，取代原本的程式碼，然後儲存。
 3. 部署 → 新增部署作業 → 類型選「網頁應用程式」：
    - 執行身分：**我**
