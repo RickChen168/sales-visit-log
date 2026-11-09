@@ -8,7 +8,7 @@
  */
 
 // ★ 貼上 Google Cloud「OAuth 用戶端 ID」（結尾是 .apps.googleusercontent.com）
-const CLIENT_ID = '';
+const CLIENT_ID = '90510015361-i0j9rj46coik3bepqsdburikqs4qvkfi.apps.googleusercontent.com';
 
 const ACCOUNTS_SHEET = '帳號';
 const ROLE_ALL = '睿思智慧';
