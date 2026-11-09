@@ -101,7 +101,17 @@ tr.detail td{background:var(--bg);padding:16px 18px}
 .empty strong{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
 .bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.login{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:32px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:14px;max-width:520px}
+.login h2{margin:0;font-family:var(--f-display);font-size:20px}
+.login p{margin:0;color:var(--muted)}
+.who{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.who strong{color:var(--ink);font-weight:500}
+.who .pill{background:var(--accent-soft);border-color:transparent;color:var(--ink)}
+.filler{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;font-size:14px;background:var(--accent-soft);border-radius:8px;padding:10px 14px}
+.filler span{color:var(--muted);font-size:13px}
+td.mine-mark{width:6px;padding:0}
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -110,32 +120,43 @@ tr.detail td{background:var(--bg);padding:16px 18px}
       <h1>業務追蹤記錄</h1>
       <p class="sub" id="today"></p>
     </div>
+    <div class="who" id="who" hidden>
+      <span>已登入：<strong id="whoName"></strong></span>
+      <span class="pill" id="whoRole"></span>
+      <button class="btn sm" type="button" id="logoutBtn">登出</button>
+    </div>
   </header>
 
   <div class="notice" id="status" hidden></div>
 
-  <!-- FORM -->
-  <section id="pane-form">
-    <form id="visitForm" novalidate>
-      <fieldset>
-        <legend>基本資訊</legend>
-        <div class="f"><label for="rep">業務姓名<span class="req">*</span></label><input id="rep" required autocomplete="name" placeholder="例：陳小明"><span class="hint">會記在這台裝置，下次自動帶入</span></div>
-        <div class="f"><label>身份別<span class="req">*</span></label>
-          <div class="seg" id="roleSeg">
-            <label><input type="radio" name="role" id="role-1" value="睿思智慧" checked>睿思智慧</label>
-            <label><input type="radio" name="role" id="role-2" value="經銷商">經銷商</label>
-          </div>
-        </div>
-        <div class="f"><label for="visitDate">出訪日期<span class="req">*</span></label><input id="visitDate" type="date" required></div>
-        <div class="f"><label>會議形式</label>
-          <div class="seg" id="modeSeg">
-            <label><input type="radio" name="mode" id="mode-1" value="實體拜訪" checked>實體拜訪</label>
-            <label><input type="radio" name="mode" id="mode-2" value="線上會議">線上會議</label>
-            <label><input type="radio" name="mode" id="mode-3" value="電話">電話</label>
-          </div>
-        </div>
-      </fieldset>
+  <!-- LOGIN -->
+  <section id="pane-login" class="login">
+    <h2>請用 Google 帳號登入</h2>
+    <p>登入後才能填寫出訪記錄、查詢記錄清單。帳號需要先由管理者加入名單。</p>
+    <div id="gsiBtn"></div>
+  </section>
 
+  <!-- APP -->
+  <div id="app" hidden>
+    <div class="tabs" role="tablist" style="align-self:flex-start">
+      <button role="tab" id="tab-form" aria-selected="true" aria-controls="pane-form">填寫記錄</button>
+      <button role="tab" id="tab-list" aria-selected="false" aria-controls="pane-list">記錄清單<span class="count" id="tabCount"></span></button>
+    </div>
+
+    <section id="pane-form" role="tabpanel" aria-labelledby="tab-form" style="margin-top:16px">
+      <form id="visitForm" novalidate>
+        <fieldset>
+          <legend>基本資訊</legend>
+          <div class="f wide"><div class="filler"><span>填寫人</span><strong id="fillName"></strong><span id="fillRole"></span><span id="fillEmail"></span></div></div>
+          <div class="f"><label for="visitDate">出訪日期<span class="req">*</span></label><input id="visitDate" type="date" required></div>
+          <div class="f"><label>會議形式</label>
+            <div class="seg" id="modeSeg">
+              <label><input type="radio" name="mode" id="mode-1" value="實體拜訪" checked>實體拜訪</label>
+              <label><input type="radio" name="mode" id="mode-2" value="線上會議">線上會議</label>
+              <label><input type="radio" name="mode" id="mode-3" value="電話">電話</label>
+            </div>
+          </div>
+        </fieldset>
       <fieldset>
         <legend>客戶</legend>
         <div class="f"><label for="company">客戶公司<span class="req">*</span></label><input id="company" required placeholder="公司全名或常用簡稱"></div>
@@ -161,39 +182,140 @@ tr.detail td{background:var(--bg);padding:16px 18px}
         <div class="f"><label for="nextDate">下次跟進日期</label><input id="nextDate" type="date"></div>
         <div class="f wide"><label for="nextAction">下一步行動</label><input id="nextAction" placeholder="例：週五前寄送報價單與案例簡報"></div>
       </fieldset>
+        <div class="actions">
+          <button class="btn primary" type="submit" id="submitBtn">送出記錄</button>
+          <button class="btn" type="button" id="resetBtn">清空</button>
+          <span class="toast" id="toast" role="status"></span>
+        </div>
+      </form>
+    </section>
 
-<div class="f" style="position:absolute;left:-9999px" aria-hidden="true"><label for="website">網站</label><input id="website" tabindex="-1" autocomplete="off"></div>
-      <div class="actions">
-        <button class="btn primary" type="submit" id="submitBtn" disabled>送出記錄</button>
-        <button class="btn" type="button" id="resetBtn">清空</button>
-        <span class="toast" id="toast" role="status"></span>
+    <section id="pane-list" role="tabpanel" aria-labelledby="tab-list" hidden style="margin-top:16px">
+      <div class="wrap" style="gap:16px">
+        <div class="stats">
+          <div class="stat"><div class="k" id="stCountLabel">記錄筆數</div><div class="v" id="stCount">0</div></div>
+          <div class="stat"><div class="k">本月出訪</div><div class="v" id="stMonth">0</div></div>
+          <div class="stat" id="stDueBox"><div class="k">已到期待跟進</div><div class="v" id="stDue">0</div></div>
+          <div class="stat"><div class="k">進行中商機預估金額</div><div class="v" id="stPipe">0</div></div>
+        </div>
+
+        <div class="filters">
+          <div class="f q"><label for="q">搜尋</label><input id="q" type="search" placeholder="公司、聯絡人、內容關鍵字"></div>
+          <div class="f" id="fRepBox" hidden><label for="fRep">業務</label><select id="fRep"><option value="">全部業務</option></select></div>
+          <div class="f" id="fRoleBox" hidden><label for="fRole">身份別</label><select id="fRole"><option value="">全部</option><option>睿思智慧</option><option>經銷商</option></select></div>
+          <div class="f"><label for="fStage">商機階段</label><select id="fStage"><option value="">全部</option><option>初次接觸</option><option>需求確認</option><option>提案 / 報價</option><option>POC 中</option><option>議價 / 簽約</option><option>成交</option><option>暫停 / 流失</option></select></div>
+          <div class="f"><label for="fRange">期間</label><select id="fRange"><option value="">全部</option><option value="week">本週</option><option value="month">本月</option><option value="due">已到期待跟進</option></select></div>
+        </div>
+
+        <div class="bar"><span id="resultCount"></span><button class="btn sm" type="button" id="refreshBtn">重新整理</button></div>
+
+        <div class="tablebox">
+          <table>
+            <thead><tr><th>出訪日期</th><th>業務</th><th>客戶</th><th>商機階段</th><th style="text-align:right">預估金額</th><th>下次跟進</th><th>跟進狀態</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
       </div>
-    </form>
-  </section>
+    </section>
+  </div>
 </div>
 
 <script>
-/* ===== 設定：貼上 Apps Script 部署後的「網頁應用程式網址」 ===== */
+/* ===== 設定 ===== */
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxVK63k8FkfJiuT4fmzechyJKzq-c1PbCl-nzzHjbHpg61J56bPfVKz5Xxku0GsuwdS/exec";
-/* ============================================================= */
+const GOOGLE_CLIENT_ID = "";   // Google Cloud「OAuth 用戶端 ID」，與 Code.gs 的 CLIENT_ID 相同
+/* =============== */
 (function(){
   const $ = id => document.getElementById(id);
   const tz = "Asia/Taipei";
   const ymd = d => new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
   const todayStr = () => ymd(new Date());
   const wk="日一二三四五六";
-  $("today").textContent = "今天 " + todayStr().replace(/-/g,"/") + "（" + wk[new Date(todayStr()+"T00:00:00").getDay()] + "）· 送出後自動寫入追蹤清單";
+  $("today").textContent = "今天 " + todayStr().replace(/-/g,"/") + "（" + wk[new Date(todayStr()+"T00:00:00").getDay()] + "）";
+  function weekStart(){ const t=new Date(todayStr()+"T00:00:00"); const dow=(t.getDay()+6)%7; t.setDate(t.getDate()-dow); return ymd(t); }
+  const normDate = s => { s=String(s||"").trim(); const m=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/); return m? m[1]+"-"+m[2].padStart(2,"0")+"-"+m[3].padStart(2,"0") : s; };
 
-  function lsGet(k){ try{return localStorage.getItem(k)||""}catch(e){return ""} }
-  function lsSet(k,v){ try{localStorage.setItem(k,v)}catch(e){} }
-  $("rep").value = lsGet("visit.rep");
-  if(lsGet("visit.role")==="經銷商") $("role-2").checked=true;
+  function ssGet(k){ try{return sessionStorage.getItem(k)||""}catch(e){return ""} }
+  function ssSet(k,v){ try{ v? sessionStorage.setItem(k,v) : sessionStorage.removeItem(k);}catch(e){} }
+
+  function setStatus(msg,err){ const s=$("status"); if(!msg){s.hidden=true;return} s.hidden=false; s.textContent=msg; s.className="notice"+(err?" err":""); }
+
+  let token = "", user = null, records = [], openRow = null;
+
+  /* ---------- 登入 ---------- */
+  function jwtExp(t){ try{ const p=JSON.parse(decodeURIComponent(escape(atob(t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))))); return (p.exp||0)*1000; }catch(e){ return 0; } }
+
+  async function api(action, extra){
+    const res = await fetch(SCRIPT_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(Object.assign({action, idToken: token}, extra||{})) });
+    const out = await res.json().catch(()=>null);
+    if(!out) throw {error:"bad_response"};
+    if(!out.ok) throw out;
+    return out;
+  }
+
+  const ERR = {
+    not_allowed: e => "這個帳號（"+(e.email||"")+"）還沒有使用權限，請聯絡管理者把你加入名單。",
+    auth_expired: () => "登入已過期，請重新登入。",
+    auth_invalid: () => "登入驗證失敗，請重新登入。",
+    auth_required: () => "請先登入。",
+    missing_client_id: () => "系統尚未完成登入設定（缺少 OAuth 用戶端 ID），請聯絡管理者。",
+  };
+  function errMsg(e){ return (ERR[e&&e.error]||(()=>"連線失敗，請稍後再試。"))(e||{}); }
+
+  async function onToken(t){
+    token = t; ssSet("idToken", t);
+    setStatus("驗證帳號中…");
+    try{
+      const out = await api("me");
+      user = out.user; setStatus("");
+      enterApp();
+    }catch(e){
+      signOut(true);
+      setStatus(errMsg(e), true);
+    }
+  }
+
+  function signOut(keepMsg){
+    token=""; user=null; records=[]; ssSet("idToken","");
+    try{ google.accounts.id.disableAutoSelect(); }catch(e){}
+    $("app").hidden=true; $("who").hidden=true; $("pane-login").hidden=false;
+    if(!keepMsg) setStatus("");
+  }
+  $("logoutBtn").onclick=()=>signOut();
+
+  function initGsi(){
+    if(!GOOGLE_CLIENT_ID){ setStatus("系統尚未完成登入設定（缺少 OAuth 用戶端 ID），請聯絡管理者。", true); return; }
+    if(!(window.google && google.accounts && google.accounts.id)){ setTimeout(initGsi, 200); return; }
+    google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: r => onToken(r.credential), auto_select: true });
+    google.accounts.id.renderButton($("gsiBtn"), { theme:"outline", size:"large", text:"signin_with", locale:"zh-TW" });
+    const saved = ssGet("idToken");
+    if(saved && jwtExp(saved) > Date.now()+60000) onToken(saved);
+    else google.accounts.id.prompt();
+  }
+
+  function enterApp(){
+    $("pane-login").hidden=true; $("app").hidden=false; $("who").hidden=false;
+    $("whoName").textContent = user.name; $("whoRole").textContent = user.role;
+    $("fillName").textContent = user.name; $("fillRole").textContent = user.role; $("fillEmail").textContent = user.email;
+    $("fRepBox").hidden = !user.canSeeAll; $("fRoleBox").hidden = !user.canSeeAll;
+    $("stCountLabel").textContent = user.canSeeAll ? "全部記錄筆數" : "我的記錄筆數";
+    loadList();
+  }
+
+  function needRelogin(e){ if(e && /^auth_/.test(e.error)){ signOut(true); setStatus(errMsg(e), true); return true; } return false; }
+
+  /* ---------- 分頁 ---------- */
+  function show(which){
+    const f = which==="form";
+    $("tab-form").setAttribute("aria-selected",f); $("tab-list").setAttribute("aria-selected",!f);
+    $("pane-form").hidden=!f; $("pane-list").hidden=f;
+    if(!f) loadList();
+  }
+  $("tab-form").onclick=()=>show("form");
+  $("tab-list").onclick=()=>show("list");
+
+  /* ---------- 填寫 ---------- */
   $("visitDate").value = todayStr();
-
-  const st=$("status");
-  if(!SCRIPT_URL){ st.hidden=false; st.className="notice err"; st.textContent="表單尚未設定資料接收網址（SCRIPT_URL），目前無法送出。"; }
-  else $("submitBtn").disabled=false;
-
   const val = id => $(id).value.trim();
   const radio = n => (document.querySelector('input[name="'+n+'"]:checked')||{}).value||"";
   function clearForm(){ ["company","contact","title","summary","needs","amount","nextDate","nextAction"].forEach(i=>$(i).value=""); $("stage").value=""; $("industry").value=""; $("mode-1").checked=true; }
@@ -202,30 +324,115 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxVK63k8FkfJiuT4fmze
   $("visitForm").addEventListener("submit", async e=>{
     e.preventDefault();
     const t=$("toast"); t.className="toast";
-    const missing=[["rep","業務姓名"],["visitDate","出訪日期"],["company","客戶公司"],["summary","會議重點"],["stage","商機階段"]].filter(([i])=>!val(i)).map(([,n])=>n);
+    const missing=[["visitDate","出訪日期"],["company","客戶公司"],["summary","會議重點"],["stage","商機階段"]].filter(([i])=>!val(i)).map(([,n])=>n);
     if(missing.length){ t.className="toast err"; t.textContent="請填寫："+missing.join("、"); return; }
     const stage=val("stage");
-    const doc = {
-      visitDate: val("visitDate"), role: radio("role"), rep: val("rep"), mode: radio("mode"),
+    const record = {
+      visitDate: val("visitDate"), mode: radio("mode"),
       company: val("company"), contact: val("contact"), title: val("title"), industry: val("industry"),
       summary: val("summary"), needs: val("needs"), stage: stage, amount: val("amount"),
       nextAction: val("nextAction"), nextDate: val("nextDate"),
-      status: (stage==="成交"||stage==="暫停 / 流失") ? "已完成" : "待跟進",
-      website: val("website")
+      status: (stage==="成交"||stage==="暫停 / 流失") ? "已完成" : "待跟進"
     };
     const btn=$("submitBtn"); btn.disabled=true; t.textContent="送出中…";
     try{
-      const res = await fetch(SCRIPT_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(doc) });
-      const out = await res.json().catch(()=>null);
-      if(!out || !out.ok) throw new Error(out && out.error || "bad response");
-      lsSet("visit.rep", doc.rep); lsSet("visit.role", doc.role);
+      await api("submit", {record});
       clearForm();
-      t.textContent = "已送出：" + doc.company + "，已寫入追蹤清單。";
+      t.textContent = "已送出：" + record.company + "，已寫入追蹤清單。";
+      records = null;
     }catch(err){
+      if(needRelogin(err)) return;
       t.className="toast err";
-      t.textContent = "送出失敗，資料沒有寫入。請確認網路連線後再試一次；若持續失敗請通知管理者。內容仍保留在表單中。";
+      t.textContent = "送出失敗，資料沒有寫入。" + errMsg(err) + " 內容仍保留在表單中。";
     }finally{ btn.disabled=false; }
   });
+
+  /* ---------- 記錄清單 ---------- */
+  let loading=false;
+  async function loadList(force){
+    if(loading) return;
+    if(records && records.length && !force) { render(); return; }
+    loading=true; $("resultCount").textContent="載入中…";
+    try{
+      const out = await api("list");
+      records = out.records.map(r=>Object.assign(r,{visitDate:normDate(r.visitDate), nextDate:normDate(r.nextDate)}));
+      render();
+    }catch(err){
+      if(!needRelogin(err)) $("resultCount").textContent = "清單載入失敗：" + errMsg(err);
+    }finally{ loading=false; }
+  }
+  $("refreshBtn").onclick=()=>loadList(true);
+  ["q","fRep","fRole","fStage","fRange"].forEach(id=>$(id).addEventListener("input",render));
+
+  const ACTIVE = ["初次接觸","需求確認","提案 / 報價","POC 中","議價 / 簽約"];
+  const isDue = x => x.nextDate && x.status!=="已完成" && x.nextDate<=todayStr();
+  function pillClass(s){ if(s==="成交")return"pill won"; if(s==="暫停 / 流失")return"pill lost"; if(s==="議價 / 簽約"||s==="POC 中")return"pill s2"; if(s==="提案 / 報價"||s==="需求確認")return"pill s1"; return"pill"; }
+  function el(tag,cls,text){ const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+  const short = n => n>=1e8 ? (n/1e8).toFixed(1).replace(/\.0$/,"")+" 億" : n>=1e4 ? Math.round(n/1e4).toLocaleString("zh-TW")+" 萬" : String(n);
+  const num = v => Number(String(v||"").replace(/[^\d.]/g,""))||0;
+
+  function filtered(){
+    const q=val("q").toLowerCase(), r=$("fRep").value, ro=$("fRole").value, s=$("fStage").value, rg=$("fRange").value;
+    const td=todayStr(), ws=weekStart(), ms=td.slice(0,7);
+    return (records||[]).filter(x=>{
+      if(r && x.rep!==r) return false;
+      if(ro && x.role!==ro) return false;
+      if(s && x.stage!==s) return false;
+      if(rg==="week" && x.visitDate<ws) return false;
+      if(rg==="month" && (x.visitDate||"").slice(0,7)!==ms) return false;
+      if(rg==="due" && !isDue(x)) return false;
+      if(q){ const hay=[x.company,x.contact,x.title,x.summary,x.needs,x.nextAction,x.rep].join(" ").toLowerCase(); if(!hay.includes(q)) return false; }
+      return true;
+    });
+  }
+
+  function render(){
+    const all = records||[];
+    const reps=[...new Set(all.map(x=>x.rep).filter(Boolean))].sort();
+    const fr=$("fRep"), cur=fr.value; fr.length=1; reps.forEach(n=>{const o=el("option",null,n); o.value=n; fr.appendChild(o);}); fr.value=reps.includes(cur)?cur:"";
+
+    const list = filtered();
+    $("tabCount").textContent = all.length || "";
+    $("stCount").textContent = list.length;
+    $("stMonth").textContent = list.filter(x=>(x.visitDate||"").slice(0,7)===todayStr().slice(0,7)).length;
+    const due=list.filter(isDue).length; $("stDue").textContent=due; $("stDueBox").classList.toggle("alert",due>0);
+    const latest={}; list.forEach(x=>{ const k=x.company; if(!latest[k] || x.visitDate>latest[k].visitDate) latest[k]=x; });
+    const pipe=Object.values(latest).filter(x=>ACTIVE.includes(x.stage)).reduce((a,x)=>a+num(x.amount),0);
+    $("stPipe").textContent = pipe? short(pipe) : "0";
+    $("resultCount").textContent = all.length ? `顯示 ${list.length} / ${all.length} 筆` + (user && !user.canSeeAll ? "（只顯示你自己的記錄）" : "") : "";
+
+    const tb=$("tbody"); tb.textContent="";
+    if(!list.length){
+      const tr=el("tr"), c=el("td","empty"); c.colSpan=7;
+      if(all.length) c.append(el("strong",null,"沒有符合條件的記錄"),"調整上方的搜尋或篩選條件看看。");
+      else c.append(el("strong",null,"還沒有記錄"),"在「填寫記錄」送出第一筆後，就會出現在這裡。");
+      tr.append(c); tb.append(tr); return;
+    }
+    list.forEach(x=>{
+      const tr=el("tr","row"+(openRow===x.row?" open":"")); tr.tabIndex=0;
+      tr.append(el("td","mono",(x.visitDate||"").replace(/-/g,"/")));
+      const rc=el("td","co",x.rep||"—"); rc.style.fontWeight="400"; if(x.role) rc.append(el("small",null,x.role)); tr.append(rc);
+      const co=el("td","co",x.company); if(x.contact||x.title) co.append(el("small",null,[x.contact,x.title].filter(Boolean).join(" · "))); tr.append(co);
+      const sp=el("td"); sp.append(el("span",pillClass(x.stage),x.stage||"—")); tr.append(sp);
+      const am=el("td","mono",x.amount? num(x.amount).toLocaleString("zh-TW"):"—"); am.style.textAlign="right"; tr.append(am);
+      tr.append(el("td","mono"+(isDue(x)?" due":""), x.nextDate? x.nextDate.replace(/-/g,"/")+(isDue(x)?" 到期":"") : "—"));
+      tr.append(el("td",null,x.status||"—"));
+      const toggle=()=>{ openRow = openRow===x.row? null : x.row; render(); };
+      tr.addEventListener("click",toggle);
+      tr.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); } });
+      tb.append(tr);
+      if(openRow===x.row){
+        const dr=el("tr","detail"), dc=el("td"); dc.colSpan=7;
+        const g=el("div","dgrid");
+        [["會議重點",x.summary],["客戶需求 / 痛點",x.needs],["下一步行動",x.nextAction],["會議形式",x.mode],["產業別",x.industry]].forEach(([h,v])=>{ if(!v) return; const d=el("div"); d.append(el("h4",null,h), el("p",null,v)); g.append(d); });
+        dc.append(g);
+        dc.append(el("div","drow","送出時間 "+(x.__ts||"—")));
+        dr.append(dc); tb.append(dr);
+      }
+    });
+  }
+
+  initGsi();
 })();
 </script>
 </body>
